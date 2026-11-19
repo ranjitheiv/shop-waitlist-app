@@ -98,6 +98,31 @@ select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border
 .switch::after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:999px;background:#fff;transition:left .15s}
 .switch.on{background:var(--amber)}
 .switch.on::after{left:24px}
+/* rules */
+.rules{background:#fff;border:2px solid #E6E4DF;border-radius:18px;padding:18px 20px;color:#17181B}
+.rules-h{font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px}
+.rules ol{margin:10px 0 0;padding-left:24px;font-size:17px;line-height:1.55}
+.rules li{margin:8px 0}
+.rules .crit{color:#B91C1C;font-weight:800}
+.rules .crit-box{margin-top:12px;background:#FEF2F2;border:1px solid #FCA5A5;color:#991B1B;border-radius:12px;padding:12px 14px;font-weight:800;font-size:16px;display:flex;gap:10px;align-items:flex-start}
+
+/* barber colour zones */
+.serving-card{background:#0F2E1C;border:1px solid #1F6B3D;border-radius:18px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.serving-card .k{color:#86EFAC;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.serving-card .btn{background:#22C55E;color:#052E16}
+.free-card{background:#0F2E1C;border:1px dashed #1F6B3D;border-radius:18px;padding:16px;color:#86EFAC;font-weight:800}
+.beige{background:#EFE6D6;border-radius:18px;padding:4px 14px;color:#2A2014}
+.beige .qrow{border-top:1px solid #DCCFB8}
+.beige .qrow:first-child{border-top:0}
+.qhead{width:100%;display:flex;align-items:center;gap:12px;padding:12px 0;background:none;border:0;color:inherit;font:inherit;text-align:left}
+.qhead .chev{transition:transform .15s;flex:none}
+.qrow.open .qhead .chev{transform:rotate(90deg)}
+.qactions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 0 14px}
+.qactions .btn{min-height:44px;font-size:14px;padding:0 8px}
+.qbtn{background:transparent;border:1.5px solid #B9A989;color:#2A2014}
+.beige .p-here{color:#15803D}.beige .p-onway{color:#8A5A00}.beige .p-away{color:#6B5E4A}
+.divider{border:0;border-top:1px solid var(--border);margin:10px 0 2px}
+textarea{font-family:inherit;font-size:15px;line-height:1.5;width:100%;min-height:110px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--ink);resize:vertical}
 @media (max-width:560px){.big-num{font-size:84px}.demo-note{display:none}.tabs{order:3;flex-basis:100%}.brand{flex:1}}
 .btn.sm{white-space:nowrap}
 </style>
@@ -186,7 +211,7 @@ select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border
     view: 'board',
     kiosk: { step: 0, barberId: null, services: [], phone: '', agreed: false, ticketId: null },
     myTicket: null,
-    barberId: null, pin: '', settingsOpen: false
+    barberId: null, pin: '', settingsOpen: false, expanded: null
   };
 
   // ---------- helpers ----------
@@ -227,6 +252,22 @@ select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border
   }
   function presenceLabel(p) {
     return p === 'here' ? { t: '● In shop', c: 'var(--good)' } : p === 'onway' ? { t: '◆ On the way', c: 'var(--soft-ink)' } : { t: '○ Not confirmed', c: 'var(--muted)' };
+  }
+  var DEFAULT_SMS = 'Hi, it’s {barber} from {shop}. You’re up next (#{number}). Please be in the shop within {grace} minutes or you’ll lose your spot in the queue.';
+  function smsText(t, me) {
+    var tpl = S.settings.smsTemplate || DEFAULT_SMS;
+    return tpl.replace(/\{barber\}/g, me.name).replace(/\{shop\}/g, SHOP.name)
+      .replace(/\{number\}/g, t.num).replace(/\{grace\}/g, S.settings.grace);
+  }
+  function smsHref(t, me) { return 'sms:' + esc(t.phone) + '?&body=' + encodeURIComponent(smsText(t, me)); }
+  function rulesHtml() {
+    var st = S.settings, ahead = st.confirmAhead === 1 ? 'one away' : st.confirmAhead + ' away';
+    var warn = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:1px"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>';
+    return '<div class="rules"><div class="rules-h">Queue rules</div><ol>' +
+      '<li>Keep an eye on your ticket. When you’re ' + ahead + ', tap <b>I’m on my way</b>.</li>' +
+      '<li>When your number is called you have <b>' + st.grace + ' minutes</b> to be in the chair.</li>' +
+      '<li>If you’re not here when you’re up, someone already in the shop may go before you.</li></ol>' +
+      '<div class="crit-box">' + warn + '<span>' + (st.dropBack ? 'Miss your call and you move back 2 spots. Miss it twice and you lose your spot.' : 'Miss your call and you lose your spot.') + '</span></div></div>';
   }
   var toastTimer;
   function toast(msg) {
@@ -320,17 +361,13 @@ select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border
         '<div class="field"><label class="label" for="phone">Mobile number</label>' +
         '<input id="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="04xx xxx xxx" value="' + esc(k.phone) + '" data-input="phone">' +
         '<div class="small muted">Only used if your barber needs to text you when you’re up.</div></div>' +
-        '<div class="card" style="display:flex;flex-direction:column;gap:8px"><div class="h2">Queue rules</div>' +
-        '<div class="small" style="line-height:1.55">1. Keep an eye on your ticket. When you’re ' + (S.settings.confirmAhead === 1 ? 'one away' : S.settings.confirmAhead + ' away') + ', confirm you’re on your way.<br>' +
-        '2. When your number is called you have ' + S.settings.grace + ' minutes to be in the chair.<br>' +
-        '3. ' + (S.settings.dropBack ? 'Miss it and you move back two spots. Miss it twice and your number is released.' : 'Miss it and your number is released.') + '<br>' +
-        '4. If you’re not here when you’re up, someone in the shop may go before you.</div></div>' +
-        '<label class="check"><input type="checkbox" data-input="agree" ' + (k.agreed ? 'checked' : '') + '><span>I’ve read and accept the queue rules</span></label>' +
+        rulesHtml() +
+        '<label class="check" style="font-size:18px;font-weight:700"><input type="checkbox" data-input="agree" ' + (k.agreed ? 'checked' : '') + '><span>I’ve read and accept the queue rules</span></label>' +
         '<div class="row between"><button class="btn ghost" data-action="k-back">Back</button><button class="btn" data-action="k-confirm" ' + (valid && k.agreed ? '' : 'disabled') + ' id="k-confirm">Get my number</button></div>';
     } else {
       var t = ticket(k.ticketId);
-      body = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;align-items:center;padding:20px 0">' +
-        '<div style="display:flex;flex-direction:column;gap:8px">' +
+      body = '<div class="card" style="align-self:center;max-width:720px;width:100%;border-radius:24px;padding:28px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:36px;margin-top:20px">' +
+        '<div style="display:flex;flex-direction:column;gap:8px;min-width:220px">' +
         '<div class="label">You’re in</div><div class="big-num">' + t.num + '</div>' +
         '<div style="font-size:18px;font-weight:700">' + barber(t.barberId).name + ' · ' + svcNames(t.services) + '</div>' +
         '<div class="muted">About ' + fmtWait(ticketWait(t)) + ' · ' + aheadOf(t) + ' ahead of you</div></div>' +
@@ -384,8 +421,7 @@ select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border
     } else {
       alert = '<div class="card"><div class="h2">Your number was released</div><div class="small muted" style="margin-top:4px;line-height:1.5">You missed your turn. Join the queue again on the iPad when you’re back.</div></div>';
     }
-    var rules = '<div class="card"><div style="font-weight:800">Queue rules</div><div class="small muted" style="margin-top:6px;line-height:1.5">When your number is called you have ' + S.settings.grace + ' minutes to be in the chair. ' +
-      (S.settings.dropBack ? 'Miss it and you’ll move back two spots. Miss it twice and your number is released.' : 'Miss it and your number is released.') + '</div></div>';
+    var rules = rulesHtml();
     var foot = '<div class="grid2"><button class="btn ghost" data-action="view" data-v="board">All wait times</button>' +
       (t.status === 'waiting' ? '<button class="btn ghost" data-action="t-leave">Leave queue</button>' : '<button class="btn ghost" data-action="t-forget">Close ticket</button>') + '</div>';
     return '<div class="stage light"><div class="col">' + header('Your spot in the queue') + top + mid + alert + rules + foot + '</div></div>';
@@ -418,9 +454,9 @@ select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border
     var head = '<div class="row between"><div class="row" style="gap:10px"><div class="avatar">' + me.name[0] + '</div>' +
       '<div><div class="small muted" style="font-weight:600">' + SHOP.name + ' · Staff</div><div class="h2">' + me.name + '</div></div></div>' +
       '<div class="row" style="gap:6px"><button class="btn ghost sm" data-action="b-settings" aria-label="Shop settings">Settings</button><button class="btn ghost sm" data-action="b-logout">Log out</button></div></div>';
-    var cur = now_ ? '<div class="card row between"><div><div class="small muted" style="font-weight:600">Now serving</div><div style="font-size:20px;font-weight:800">#' + now_.num + ' · ' + svcNames(now_.services) + '</div>' +
-      '<div class="small muted">Started ' + Math.max(0, Math.round((now() - now_.started) / MIN)) + ' min ago</div></div><button class="btn ghost sm" data-action="b-done" data-id="' + now_.id + '">Done</button></div>'
-      : '<div class="card"><div class="small muted" style="font-weight:600">Now serving</div><div style="font-size:18px;font-weight:800">Nobody. You’re free.</div></div>';
+    var cur = now_ ? '<div class="serving-card"><div><div class="k">In the chair</div><div style="font-size:20px;font-weight:800;color:#fff">#' + now_.num + ' · ' + svcNames(now_.services) + '</div>' +
+      '<div class="small" style="color:#BBF7D0">Started ' + Math.max(0, Math.round((now() - now_.started) / MIN)) + ' min ago</div></div><button class="btn sm" data-action="b-done" data-id="' + now_.id + '">Done</button></div>'
+      : '<div class="free-card">Chair’s free. Start the next customer.</div>';
     var nextCard = '';
     if (up) {
       var p = presenceLabel(up.presence);
@@ -429,25 +465,34 @@ select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border
         '<div style="font-size:44px;font-weight:800;line-height:1;color:#fff">#' + up.num + '</div><div class="small" style="color:#E6D3A8">' + svcNames(up.services) + ' · ' + up.mins + ' min</div></div>' +
         '<div class="pill" style="background:var(--surface);color:' + p.c + '">' + p.t + '</div></div>' +
         '<button class="btn" data-action="b-start" data-id="' + up.id + '">Start #' + up.num + '</button>' +
-        '<div class="grid2"><a class="btn ghost amber sm" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="sms:' + esc(up.phone) + '?&body=' + encodeURIComponent('Hi, it’s ' + me.name + ' at ' + SHOP.name + '. You’re up (#' + up.num + '). Please be here in ' + S.settings.grace + ' minutes or you’ll lose your spot.') + '">Text customer</a>' +
+        '<div class="grid2"><a class="btn ghost amber sm" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="' + smsHref(up, me) + '">Text customer</a>' +
         '<button class="btn ghost amber sm" data-action="b-noshow" data-id="' + up.id + '">No-show</button></div>' +
         (up.presence !== 'here' && hereLater ? '<div class="small" style="color:#E6D3A8">#' + hereLater.num + ' is already in the shop. You can take them first.</div>' : '') +
         '</div>';
     }
+    var chev = '<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>';
     var rows = q.slice(up ? 1 : 0).map(function (t) {
-      var p = presenceLabel(t.presence);
-      return '<div class="item"><div style="font-size:17px;font-weight:800;width:48px">#' + t.num + '</div>' +
-        '<div style="flex:1"><div style="font-size:14px;font-weight:700">' + svcNames(t.services) + '</div><div class="small muted">Joined ' + new Date(t.joined).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' }) + '</div></div>' +
-        '<div class="status" style="color:' + p.c + '">' + p.t + '</div>' +
-        '<button class="btn ghost sm" data-action="b-start" data-id="' + t.id + '" aria-label="Start number ' + t.num + '">Start</button></div>';
+      var cls = t.presence === 'here' ? 'p-here' : t.presence === 'onway' ? 'p-onway' : 'p-away';
+      var open = UI.expanded === t.id;
+      return '<div class="qrow' + (open ? ' open' : '') + '"><button class="qhead" data-action="b-expand" data-id="' + t.id + '" aria-expanded="' + open + '">' +
+        '<span style="font-size:18px;font-weight:800;width:50px">#' + t.num + '</span>' +
+        '<span style="flex:1"><span style="display:block;font-size:15px;font-weight:700">' + svcNames(t.services) + '</span><span class="small" style="color:#6B5E4A">Joined ' + new Date(t.joined).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' }) + ' · ' + t.mins + ' min</span></span>' +
+        '<span class="status ' + cls + '">' + presenceLabel(t.presence).t + '</span>' + chev + '</button>' +
+        (open ? '<div class="qactions"><button class="btn sm" data-action="b-start" data-id="' + t.id + '">Start now</button>' +
+          '<a class="btn qbtn sm" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="' + smsHref(t, me) + '">Text</a>' +
+          '<button class="btn qbtn sm" data-action="b-noshow" data-id="' + t.id + '">No-show</button></div>' : '') +
+        '</div>';
     }).join('');
     var others = onToday().filter(function (b) { return b.id !== me.id; }).map(function (b) {
-      return '<div class="card row between" style="padding:10px 12px"><span style="font-weight:700">' + b.name + '</span><span class="small muted">' + fmtWait(barberWait(b.id)) + '</span></div>';
+      var n = queue(b.id).length;
+      return '<div class="card" style="padding:10px 12px"><div class="row between"><span style="font-weight:700">' + b.name + '</span><span style="font-weight:800">' + fmtWait(barberWait(b.id)) + '</span></div>' +
+        '<div class="small muted">' + (n ? n + ' waiting' : 'Nobody waiting') + '</div></div>';
     }).join('');
     return '<div class="stage dark"><div class="col">' + head + cur + nextCard +
-      '<div class="row between"><div class="h2" style="font-size:16px">Your queue</div><div class="small muted">' + q.length + ' waiting · ~' + barberWait(me.id) + ' min</div></div>' +
-      (rows ? '<div class="card list" style="padding:0 14px">' + rows + '</div>' : (up ? '' : '<div class="card small muted">Nobody waiting for you.</div>')) +
-      '<div class="h2" style="font-size:16px">Rest of the shop</div><div class="grid2">' + others + '</div></div></div>';
+      '<div class="row between"><div class="h2" style="font-size:16px">Your queue</div><div class="small muted">' + q.length + ' waiting · ' + fmtWait(barberWait(me.id)) + '</div></div>' +
+      (rows ? '<div class="beige">' + rows + '</div><div class="small muted">Tap a number to start, text or mark a no-show.</div>' : (up ? '' : '<div class="card small muted">Nobody waiting for you.</div>')) +
+      '<hr class="divider"><div class="row between"><div class="h2" style="font-size:15px;color:var(--muted)">Rest of the shop</div><div class="small muted">' + onToday().filter(function (b) { return b.id !== me.id; }).reduce(function (s, b) { return s + queue(b.id).length; }, 0) + ' waiting</div></div>' +
+      '<div class="grid2">' + others + '</div></div></div>';
   }
 
   function viewSettings(me) {
@@ -461,6 +506,10 @@ select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border
       '<div class="setting"><div><div style="font-weight:700">Ask to confirm at</div><div class="small muted">People ahead when “nearly up” shows</div></div>' + stepper('confirmAhead', st.confirmAhead, 'ahead') + '</div>' +
       '<div class="setting"><div><div style="font-weight:700">Drop back first</div><div class="small muted">First miss moves back 2 spots, second removes</div></div>' +
       '<button class="switch' + (st.dropBack ? ' on' : '') + '" role="switch" aria-checked="' + st.dropBack + '" aria-label="Drop back first" data-action="s-toggle"></button></div></div>' +
+      '<div class="h2" style="font-size:16px">Text message to customers</div>' +
+      '<div class="card" style="display:flex;flex-direction:column;gap:8px"><label class="small muted" for="sms">Sent when a barber taps “Text customer”. Use {barber}, {number}, {grace} and {shop} and they fill in automatically.</label>' +
+      '<textarea id="sms" data-input="sms">' + esc(st.smsTemplate || DEFAULT_SMS) + '</textarea>' +
+      '<div class="small muted">Preview: ' + esc(smsText({ num: 47 }, me)) + '</div></div>' +
       '<div class="h2" style="font-size:16px">Working today</div><div class="card">' + S.barbers.map(function (b) {
         return '<div class="setting"><div style="font-weight:700">' + b.name + '</div><button class="switch' + (b.on ? ' on' : '') + '" role="switch" aria-checked="' + b.on + '" aria-label="' + b.name + ' working today" data-action="s-barber" data-id="' + b.id + '"></button></div>';
       }).join('') + '</div></div></div>';
@@ -504,6 +553,7 @@ select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border
         UI.pin = key === '⌫' ? UI.pin.slice(0, -1) : (UI.pin + key).slice(0, 4); render(); break;
       case 'b-logout': UI.barberId = null; UI.pin = ''; UI.settingsOpen = false; render(); break;
       case 'b-settings': UI.settingsOpen = !UI.settingsOpen; render(); break;
+      case 'b-expand': UI.expanded = UI.expanded === id ? null : id; render(); break;
       case 'b-start': startTicket(id); save(); break;
       case 'b-done': ticket(id).status = 'done'; save(); toast('Nice one'); break;
       case 'b-noshow':
@@ -535,6 +585,7 @@ select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border
     var f = e.target.getAttribute('data-input'); if (!f) return;
     if (f === 'agree') { UI.kiosk.agreed = e.target.checked; var btn = document.getElementById('k-confirm'); if (btn) btn.disabled = !(/^04\d{8}$/.test(UI.kiosk.phone.replace(/\s/g, '')) && UI.kiosk.agreed); }
     if (f === 'pick' && e.target.value) { UI.myTicket = e.target.value; render(); }
+    if (f === 'sms') { S.settings.smsTemplate = e.target.value.trim() || DEFAULT_SMS; save(); toast('Message saved'); }
   });
 
   // open a ticket straight from a scanned QR link (same device in the demo)
@@ -544,6 +595,7 @@ select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border
   render();
   setInterval(function () {
     if (UI.view === 'kiosk' && UI.kiosk.step === 3) return; // don't wipe the phone field while typing
+    if (UI.settingsOpen) return;
     render();
   }, 15000);
 })();
