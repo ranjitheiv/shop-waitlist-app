@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Holdr · Demo</title>
+<meta name="theme-color" content="#111316">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="qrcode.js"></script>
+<style>
+:root{
+  --amber:#F5B53D; --on-amber:#1A1300; --honey:#8A5A00;
+  --radius:16px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:Manrope,system-ui,sans-serif;background:#E9EBEE;color:#17181B;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+
+/* ---------- demo bar ---------- */
+.demobar{position:sticky;top:0;z-index:20;background:#0B0C0E;color:#F2F3F5;padding:10px 14px calc(10px) 14px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;margin-right:6px}
+.tabs{display:flex;gap:6px;overflow-x:auto;flex:1 1 auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{white-space:nowrap;border:1px solid #2C3038;background:#1B1E23;color:#C9CDD4;border-radius:999px;padding:9px 14px;font-weight:700;font-size:14px;min-height:40px}
+.tab.on{background:var(--amber);border-color:var(--amber);color:var(--on-amber)}
+.tools{display:flex;gap:6px}
+.tool{border:1px solid #2C3038;background:transparent;color:#C9CDD4;border-radius:10px;padding:8px 10px;font-weight:700;font-size:13px;min-height:40px}
+.demo-note{width:100%;font-size:12px;color:#A4AAB4}
+
+/* ---------- themes ---------- */
+.light{--bg:#F7F6F3;--surface:#FFFFFF;--ink:#17181B;--muted:#5B6068;--border:#E6E4DF;--soft:#FDF1D8;--soft-ink:#7A4E00;--track:#F0EEE9;--good:#15803D}
+.dark{--bg:#111316;--surface:#1B1E23;--ink:#F2F3F5;--muted:#A4AAB4;--border:#2C3038;--soft:#2D2818;--soft-ink:#F8CD78;--track:#2A2D33;--good:#4ADE80}
+.stage{min-height:calc(100vh - 64px);background:var(--bg);color:var(--ink);padding:20px 16px 40px;display:flex;justify-content:center}
+.col{width:100%;max-width:440px;display:flex;flex-direction:column;gap:14px}
+.col.wide{max-width:980px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.h1{font-size:24px;font-weight:800;margin:0}
+.h2{font-size:18px;font-weight:800;margin:0}
+.row{display:flex;align-items:center;gap:12px}
+.between{justify-content:space-between}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:999px;background:var(--good);display:inline-block}
+.avatar{width:40px;height:40px;border-radius:999px;background:var(--soft);color:var(--soft-ink);display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.pill{padding:6px 11px;border-radius:999px;font-size:13px;font-weight:800;background:var(--track);color:var(--ink);white-space:nowrap}
+.pill.go{background:var(--amber);color:var(--on-amber)}
+.list .item{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border)}
+.list .item:first-child{border-top:0}
+.btn{min-height:48px;border-radius:12px;border:0;background:var(--amber);color:var(--on-amber);font-weight:800;font-size:16px;padding:0 18px}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--ink)}
+.btn.dark{background:#1A1300;color:#fff}
+.btn.outline-dark{background:transparent;border:2px solid #1A1300;color:#1A1300}
+.btn.sm{min-height:40px;font-size:14px;padding:0 12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.hero{background:var(--amber);color:var(--on-amber);border-radius:20px;padding:18px}
+.big-num{font-size:96px;font-weight:800;line-height:1}
+.status{font-size:12px;font-weight:800;white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0B0C0E;color:#fff;padding:12px 16px;border-radius:12px;font-weight:700;font-size:14px;z-index:50;box-shadow:0 8px 30px rgba(0,0,0,.25);max-width:90vw}
+.bar{height:8px;border-radius:999px;background:var(--track);overflow:hidden}
+.bar>div{height:8px;background:var(--amber);border-radius:999px}
+select{font-family:inherit;font-size:15px;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--ink);min-height:44px;width:100%}
+
+/* kiosk */
+.kiosk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.choice{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:18px;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:6px;min-height:110px}
+.choice.on{border-color:var(--amber);background:var(--soft)}
+.choice .t{font-size:20px;font-weight:800}
+.steps{display:flex;gap:6px}
+.steps span{flex:1;height:6px;border-radius:999px;background:var(--track)}
+.steps span.on{background:var(--amber)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field input[type=tel]{font-size:22px;padding:14px;border-radius:12px;border:2px solid var(--border);background:var(--surface);color:var(--ink);min-height:56px}
+.check{display:flex;gap:12px;align-items:flex-start;font-size:15px;line-height:1.45}
+.check input{width:24px;height:24px;margin-top:2px;accent-color:#B7791F;flex:none}
+.qr{background:#fff;padding:12px;border-radius:14px;display:inline-flex}
+.qr svg{display:block;width:180px;height:180px}
+
+/* barber */
+.keypad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.key{min-height:60px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:22px;font-weight:800}
+.pins{display:flex;gap:12px;justify-content:center}
+.pins span{width:16px;height:16px;border-radius:999px;border:2px solid var(--muted)}
+.pins span.on{background:var(--amber);border-color:var(--amber)}
+.next-card{background:var(--soft);border:1px solid #5A4A22;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.dark .btn.ghost.amber{border-color:#5A4A22;color:var(--soft-ink)}
+.setting{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--border)}
+.setting:first-child{border-top:0}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper button{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--ink);font-size:20px;font-weight:800}
+.switch{width:52px;height:32px;border-radius:999px;border:0;background:var(--track);position:relative}
+.switch::after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:999px;background:#fff;transition:left .15s}
+.switch.on{background:var(--amber)}
+.switch.on::after{left:24px}
+@media (max-width:560px){.big-num{font-size:84px}.demo-note{display:none}.tabs{order:3;flex-basis:100%}.brand{flex:1}}
+.btn.sm{white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="demobar">
+  <div class="brand">
+    <svg width="26" height="26" viewBox="0 0 56 56" aria-hidden="true"><path d="M14 6h28a4 4 0 0 1 4 4v40l-18-11-18 11V10a4 4 0 0 1 4-4z" fill="#F5B53D"/><path d="M20 24l6 6 11-12" fill="none" stroke="#1A1300" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    holdr
+  </div>
+  <nav class="tabs" id="tabs" aria-label="Demo screens"></nav>
+  <div class="tools">
+    <button class="tool" data-action="skip" title="Move the clock forward to see wait times drop">+10 min</button>
+    <button class="tool" data-action="reset">Reset</button>
+  </div>
+  <div class="demo-note">Demo with pretend data. Everything is stored on this device only. Open it in two browser tabs to watch screens update each other.</div>
+</div>
+<main id="app"></main>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- fixed data ----------
+  var SHOP = { name: 'Barbers Deluxe', area: 'West Ryde' };
+  var SERVICES = [
+    { id: 'cut', name: 'Haircut', mins: 30 },
+    { id: 'fade', name: 'Zero & Skin Fade', mins: 30 },
+    { id: 'beard', name: 'Beard Trim', mins: 20 }
+  ];
+  var KEY = 'holdr-demo-v1';
+  var MIN = 60000;
+
+  // ---------- shared state (pretend database) ----------
+  function seed() {
+    var t = Date.now();
+    var b = [
+      { id: 'tony', name: 'Tony', on: true },
+      { id: 'miriam', name: 'Miriam', on: true },
+      { id: 'elias', name: 'Elias', on: true },
+      { id: 'sargis', name: 'Sargis', on: true },
+      { id: 'dan', name: 'Dan', on: true }
+    ];
+    var k = [];
+    var n = 38;
+    function add(barber, services, status, joinedAgo, extra) {
+      var tk = Object.assign({
+        id: 't' + n, num: n, barberId: barber, services: services,
+        mins: minsFor(services), phone: '04' + String(10000000 + n * 7919).slice(0, 8),
+        joined: t - joinedAgo * MIN, order: n, status: status,
+        presence: 'away', started: null, misses: 0
+      }, extra || {});
+      k.push(tk); n++;
+    }
+    add('miriam', ['cut'], 'serving', 30, { started: t - 18 * MIN, presence: 'here' });
+    add('elias', ['fade'], 'serving', 28, { started: t - 10 * MIN, presence: 'here' });
+    add('sargis', ['cut', 'beard'], 'serving', 40, { started: t - 12 * MIN, presence: 'here' });
+    add('dan', ['cut'], 'serving', 35, { started: t - 5 * MIN, presence: 'here' });
+    add('dan', ['fade'], 'waiting', 25, { presence: 'here' });
+    add('sargis', ['cut'], 'waiting', 22, { presence: 'here' });
+    add('dan', ['beard'], 'waiting', 18, { presence: 'onway' });
+    add('sargis', ['fade'], 'waiting', 12, { presence: 'away' });
+    add('dan', ['cut'], 'waiting', 6, { presence: 'away' });
+    return {
+      next: n, offset: 0, barbers: b, tickets: k,
+      settings: { grace: 5, confirmAhead: 1, dropBack: true }
+    };
+  }
+
+  var S = load();
+  function load() {
+    try { var raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+    return seed();
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+    render();
+  }
+  window.addEventListener('storage', function (e) {
+    if (e.key === KEY) { S = load(); render(); }
+  });
+
+  // ---------- per-device UI state ----------
+  var UI = {
+    view: 'board',
+    kiosk: { step: 0, barberId: null, services: [], phone: '', agreed: false, ticketId: null },
+    myTicket: null,
+    barberId: null, pin: '', settingsOpen: false
+  };
+
+  // ---------- helpers ----------
+  function now() { return Date.now() + (S.offset || 0); }
+  function minsFor(ids) { return ids.reduce(function (s, id) { var x = SERVICES.find(function (v) { return v.id === id; }); return s + (x ? x.mins : 0); }, 0); }
+  function svcNames(ids) { return ids.map(function (id) { var x = SERVICES.find(function (v) { return v.id === id; }); return x ? x.name : id; }).join(' + '); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function barber(id) { return S.barbers.find(function (b) { return b.id === id; }); }
+  function ticket(id) { return S.tickets.find(function (t) { return t.id === id; }); }
+  function serving(bid) { return S.tickets.find(function (t) { return t.barberId === bid && t.status === 'serving'; }); }
+  function queue(bid) {
+    return S.tickets.filter(function (t) { return t.barberId === bid && t.status === 'waiting'; })
+      .sort(function (a, b) { return a.order - b.order; });
+  }
+  function remainingNow(bid) {
+    var s = serving(bid);
+    if (!s) return 0;
+    return Math.max(0, Math.round(s.mins - (now() - s.started) / MIN));
+  }
+  function barberWait(bid) {
+    return remainingNow(bid) + queue(bid).reduce(function (sum, t) { return sum + t.mins; }, 0);
+  }
+  function ticketWait(t) {
+    var q = queue(t.barberId), w = remainingNow(t.barberId);
+    for (var i = 0; i < q.length && q[i].id !== t.id; i++) w += q[i].mins;
+    return w;
+  }
+  function aheadOf(t) {
+    var q = queue(t.barberId), i = q.findIndex(function (x) { return x.id === t.id; });
+    return i < 0 ? 0 : i;
+  }
+  function fmtWait(m) { return m <= 0 ? 'Free now' : (m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60 ? (m % 60) + ' min' : '')); }
+  function onToday() { return S.barbers.filter(function (b) { return b.on; }); }
+  function quickest() {
+    var list = onToday().map(function (b) { return { b: b, w: barberWait(b.id) }; });
+    list.sort(function (a, b) { return a.w - b.w; });
+    return list[0];
+  }
+  function presenceLabel(p) {
+    return p === 'here' ? { t: '● In shop', c: 'var(--good)' } : p === 'onway' ? { t: '◆ On the way', c: 'var(--soft-ink)' } : { t: '○ Not confirmed', c: 'var(--muted)' };
+  }
+  var toastTimer;
+  function toast(msg) {
+    var el = document.getElementById('toast');
+    el.textContent = msg; el.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.hidden = true; }, 2600);
+  }
+  function qrSvg(text) {
+    if (typeof window.qrcode !== 'function') return '<div style="width:180px;height:180px;display:flex;align-items:center;justify-content:center;color:#5B6068;font-size:13px;text-align:center">QR code</div>';
+    var q = window.qrcode(0, 'M'); q.addData(text); q.make();
+    return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  }
+  function ticketUrl(id) { return location.href.split('#')[0] + '#ticket=' + id; }
+
+  // ---------- views ----------
+  var TABS = [
+    { id: 'board', label: 'Live wait times' },
+    { id: 'kiosk', label: 'iPad check-in' },
+    { id: 'ticket', label: 'Customer ticket' },
+    { id: 'barber', label: 'Barber phone' }
+  ];
+
+  function render() {
+    document.getElementById('tabs').innerHTML = TABS.map(function (t) {
+      return '<button class="tab' + (UI.view === t.id ? ' on' : '') + '" data-action="view" data-v="' + t.id + '">' + t.label + '</button>';
+    }).join('');
+    var html = UI.view === 'board' ? viewBoard() : UI.view === 'kiosk' ? viewKiosk() : UI.view === 'ticket' ? viewTicket() : viewBarber();
+    document.getElementById('app').innerHTML = html;
+    document.querySelector('meta[name=theme-color]').setAttribute('content', UI.view === 'barber' ? '#111316' : '#0B0C0E');
+  }
+
+  function header(title) {
+    return '<div class="row between"><div><div class="small muted" style="font-weight:600">' + SHOP.name + ' · ' + SHOP.area + '</div>' +
+      '<div class="h1">' + title + '</div></div><span class="live"><span class="dot"></span>Live</span></div>';
+  }
+
+  // ----- public wait board -----
+  function viewBoard() {
+    var q = quickest();
+    var rows = onToday().map(function (b) {
+      var w = barberWait(b.id), n = queue(b.id).length;
+      return '<div class="item"><div class="avatar">' + b.name[0] + '</div>' +
+        '<div style="flex:1"><div style="font-weight:700">' + b.name + '</div><div class="small muted">' + (n ? n + ' waiting' : (serving(b.id) ? 'Finishing up' : 'Nobody waiting')) + '</div></div>' +
+        '<div class="pill' + (w === 0 ? ' go' : '') + '">' + fmtWait(w) + '</div></div>';
+    }).join('');
+    return '<div class="stage light"><div class="col">' + header('Live wait times') +
+      (q ? '<div class="hero row between"><div><div class="small" style="font-weight:700">Don’t mind who? Quickest is</div><div style="font-size:24px;font-weight:800">' + q.b.name + '</div></div>' +
+        '<div style="text-align:right"><div style="font-size:34px;font-weight:800;line-height:1">' + q.w + '</div><div class="small" style="font-weight:700">min wait</div></div></div>' : '') +
+      '<div class="h2">By barber</div><div class="card list" style="padding:0 14px">' + rows + '</div>' +
+      '<div class="small muted" style="line-height:1.5">Join the queue on the iPad at the front of the shop. You’ll get a QR code to track your spot from your phone.</div>' +
+      '<div class="small muted" style="text-align:center">' + SERVICES.map(function (s) { return s.name + ' ' + s.mins + ' min'; }).join(' · ') + '</div>' +
+      '</div></div>';
+  }
+
+  // ----- iPad kiosk -----
+  function steps(i) {
+    return '<div class="steps" aria-hidden="true">' + [0, 1, 2].map(function (x) { return '<span class="' + (x <= i ? 'on' : '') + '"></span>'; }).join('') + '</div>';
+  }
+  function viewKiosk() {
+    var k = UI.kiosk, body = '';
+    if (k.step === 0) {
+      var q = quickest();
+      body = '<div style="display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;padding:40px 0">' +
+        '<div class="label">Welcome to ' + SHOP.name + '</div>' +
+        '<div style="font-size:44px;font-weight:800;line-height:1.1">Grab your spot<br>in the queue</div>' +
+        '<div class="muted" style="font-size:18px">Shortest wait right now: <b style="color:var(--ink)">' + (q ? q.b.name + ' · ' + fmtWait(q.w) : '-') + '</b></div>' +
+        '<button class="btn" style="min-height:72px;font-size:22px;padding:0 48px" data-action="k-start">Join the queue</button>' +
+        '<div class="muted small">Already in the queue and back in the shop? Scan the “I’m here” code on the counter.</div></div>';
+    } else if (k.step === 1) {
+      var opts = [{ id: 'any', name: 'First available', sub: 'Whoever is free first', w: quickest() ? quickest().w : 0 }].concat(onToday().map(function (b) {
+        return { id: b.id, name: b.name, sub: queue(b.id).length + ' waiting', w: barberWait(b.id) };
+      }));
+      body = steps(0) + '<div class="h1">Who would you like?</div>' +
+        '<div class="kiosk-grid">' + opts.map(function (o) {
+          return '<button class="choice' + (k.barberId === o.id ? ' on' : '') + '" data-action="k-barber" data-id="' + o.id + '">' +
+            '<span class="t">' + o.name + '</span><span class="muted small">' + o.sub + '</span>' +
+            '<span class="pill' + (o.w === 0 ? ' go' : '') + '" style="align-self:flex-start;margin-top:auto">' + fmtWait(o.w) + '</span></button>';
+        }).join('') + '</div>' +
+        '<div class="row between"><button class="btn ghost" data-action="k-cancel">Cancel</button><button class="btn" data-action="k-next" ' + (k.barberId ? '' : 'disabled') + '>Next</button></div>';
+    } else if (k.step === 2) {
+      body = steps(1) + '<div class="h1">What are you having?</div><div class="muted">Pick one or more.</div>' +
+        '<div class="kiosk-grid">' + SERVICES.map(function (s) {
+          var on = k.services.indexOf(s.id) >= 0;
+          return '<button class="choice' + (on ? ' on' : '') + '" data-action="k-svc" data-id="' + s.id + '" aria-pressed="' + on + '">' +
+            '<span class="t">' + s.name + '</span><span class="muted small">About ' + s.mins + ' min</span></button>';
+        }).join('') + '</div>' +
+        '<div class="row between"><button class="btn ghost" data-action="k-back">Back</button><button class="btn" data-action="k-next" ' + (k.services.length ? '' : 'disabled') + '>Next</button></div>';
+    } else if (k.step === 3) {
+      var valid = /^04\d{8}$/.test(k.phone.replace(/\s/g, ''));
+      body = steps(2) + '<div class="h1">Your mobile and the queue rules</div>' +
+        '<div class="field"><label class="label" for="phone">Mobile number</label>' +
+        '<input id="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="04xx xxx xxx" value="' + esc(k.phone) + '" data-input="phone">' +
+        '<div class="small muted">Only used if your barber needs to text you when you’re up.</div></div>' +
+        '<div class="card" style="display:flex;flex-direction:column;gap:8px"><div class="h2">Queue rules</div>' +
+        '<div class="small" style="line-height:1.55">1. Keep an eye on your ticket. When you’re ' + (S.settings.confirmAhead === 1 ? 'one away' : S.settings.confirmAhead + ' away') + ', confirm you’re on your way.<br>' +
+        '2. When your number is called you have ' + S.settings.grace + ' minutes to be in the chair.<br>' +
+        '3. ' + (S.settings.dropBack ? 'Miss it and you move back two spots. Miss it twice and your number is released.' : 'Miss it and your number is released.') + '<br>' +
+        '4. If you’re not here when you’re up, someone in the shop may go before you.</div></div>' +
+        '<label class="check"><input type="checkbox" data-input="agree" ' + (k.agreed ? 'checked' : '') + '><span>I’ve read and accept the queue rules</span></label>' +
+        '<div class="row between"><button class="btn ghost" data-action="k-back">Back</button><button class="btn" data-action="k-confirm" ' + (valid && k.agreed ? '' : 'disabled') + ' id="k-confirm">Get my number</button></div>';
+    } else {
+      var t = ticket(k.ticketId);
+      body = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;align-items:center;padding:20px 0">' +
+        '<div style="display:flex;flex-direction:column;gap:8px">' +
+        '<div class="label">You’re in</div><div class="big-num">' + t.num + '</div>' +
+        '<div style="font-size:18px;font-weight:700">' + barber(t.barberId).name + ' · ' + svcNames(t.services) + '</div>' +
+        '<div class="muted">About ' + fmtWait(ticketWait(t)) + ' · ' + aheadOf(t) + ' ahead of you</div></div>' +
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">' +
+        '<div class="qr" role="img" aria-label="QR code for your ticket">' + qrSvg(ticketUrl(t.id)) + '</div>' +
+        '<div style="font-weight:800">Scan with your phone camera</div><div class="small muted">Track your spot live. No app needed.</div>' +
+        '<button class="btn ghost sm" data-action="k-open-ticket">Demo: open it as the customer</button></div></div>' +
+        '<div style="display:flex;justify-content:center"><button class="btn" data-action="k-cancel">Done</button></div>';
+    }
+    return '<div class="stage light"><div class="col wide" style="gap:20px">' + body + '</div></div>';
+  }
+
+  // ----- customer ticket -----
+  function viewTicket() {
+    var t = UI.myTicket && ticket(UI.myTicket);
+    if (!t) {
+      var active = S.tickets.filter(function (x) { return x.status === 'waiting' || x.status === 'serving'; });
+      return '<div class="stage light"><div class="col">' + header('Your spot in the queue') +
+        '<div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="h2">No ticket on this phone yet</div>' +
+        '<div class="small muted" style="line-height:1.5">In real life this opens when the customer scans the QR code on the iPad. For the demo, join on the iPad tab or pick a number below.</div>' +
+        '<label class="label" for="pick">View as number</label><select id="pick" data-input="pick"><option value="">Choose…</option>' +
+        active.map(function (x) { return '<option value="' + x.id + '">#' + x.num + ' · ' + barber(x.barberId).name + '</option>'; }).join('') +
+        '</select><button class="btn" data-action="view" data-v="kiosk">Go to iPad check-in</button></div></div></div>';
+    }
+    var b = barber(t.barberId), ahead = aheadOf(t), wait = ticketWait(t), q = queue(t.barberId).length;
+    var progress = q ? Math.round(100 * (1 - ahead / Math.max(q, 1))) : 100;
+    var top = '<div class="card" style="display:flex;flex-direction:column;align-items:center;gap:6px;border-radius:24px;padding:22px 18px">' +
+      '<div class="label" style="color:var(--honey)">Your number</div><div class="big-num">' + t.num + '</div>' +
+      '<div class="pill" style="background:var(--soft);color:var(--soft-ink)">' + b.name + ' · ' + svcNames(t.services) + '</div></div>';
+    var mid = '', alert = '';
+    if (t.status === 'waiting') {
+      mid = '<div class="grid2"><div class="card"><div class="small muted" style="font-weight:600">Ahead of you</div><div style="font-size:26px;font-weight:800">' + ahead + '</div></div>' +
+        '<div class="card"><div class="small muted" style="font-weight:600">Estimated wait</div><div style="font-size:26px;font-weight:800">' + (wait ? '~' + wait + ' min' : 'Any moment') + '</div></div></div>' +
+        '<div class="bar" aria-hidden="true"><div style="width:' + progress + '%"></div></div>';
+      if (ahead <= S.settings.confirmAhead) {
+        if (t.presence === 'here') {
+          alert = '<div class="hero"><div style="font-weight:800;font-size:18px">You’re checked in</div><div style="margin-top:4px;font-weight:600">' + b.name + ' knows you’re in the shop. Stay close.</div></div>';
+        } else if (t.presence === 'onway') {
+          alert = '<div class="hero"><div style="font-weight:800;font-size:18px">Thanks, ' + b.name + ' knows you’re on your way</div><div style="margin-top:4px;font-weight:600">Tap “I’m here” when you walk in.</div>' +
+            '<button class="btn dark" style="margin-top:12px;width:100%" data-action="t-here">I’m here</button></div>';
+        } else {
+          alert = '<div class="hero" style="display:flex;flex-direction:column;gap:10px"><div class="label" style="color:var(--on-amber)">You’re nearly up</div>' +
+            '<div style="font-weight:600;line-height:1.4">' + (ahead === 0 ? 'You’re next.' : ahead + ' ahead of you.') + ' Head back to the shop now, or let ' + b.name + ' know you’re already here.</div>' +
+            '<div class="grid2"><button class="btn dark" data-action="t-onway">I’m on my way</button><button class="btn outline-dark" data-action="t-here">I’m here</button></div></div>';
+        }
+      }
+    } else if (t.status === 'serving') {
+      alert = '<div class="hero"><div style="font-size:22px;font-weight:800">It’s your turn</div><div style="margin-top:4px;font-weight:600">Head to ' + b.name + '’s chair.</div></div>';
+    } else if (t.status === 'done') {
+      alert = '<div class="card"><div class="h2">All done. Thanks for coming in!</div><div class="small muted" style="margin-top:4px">See you next time.</div></div>';
+    } else {
+      alert = '<div class="card"><div class="h2">Your number was released</div><div class="small muted" style="margin-top:4px;line-height:1.5">You missed your turn. Join the queue again on the iPad when you’re back.</div></div>';
+    }
+    var rules = '<div class="card"><div style="font-weight:800">Queue rules</div><div class="small muted" style="margin-top:6px;line-height:1.5">When your number is called you have ' + S.settings.grace + ' minutes to be in the chair. ' +
+      (S.settings.dropBack ? 'Miss it and you’ll move back two spots. Miss it twice and your number is released.' : 'Miss it and your number is released.') + '</div></div>';
+    var foot = '<div class="grid2"><button class="btn ghost" data-action="view" data-v="board">All wait times</button>' +
+      (t.status === 'waiting' ? '<button class="btn ghost" data-action="t-leave">Leave queue</button>' : '<button class="btn ghost" data-action="t-forget">Close ticket</button>') + '</div>';
+    return '<div class="stage light"><div class="col">' + header('Your spot in the queue') + top + mid + alert + rules + foot + '</div></div>';
+  }
+
+  // ----- barber phone (dark) -----
+  function viewBarber() {
+    if (!UI.barberId) {
+      return '<div class="stage dark"><div class="col">' +
+        '<div><div class="small muted" style="font-weight:600">' + SHOP.name + ' · Staff</div><div class="h1">Who’s working?</div></div>' +
+        '<div class="card list" style="padding:0 14px">' + S.barbers.map(function (b) {
+          return '<button class="item" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;color:inherit;text-align:left;font:inherit" data-action="b-pick" data-id="' + b.id + '">' +
+            '<span class="avatar">' + b.name[0] + '</span><span style="flex:1;font-weight:700">' + b.name + '</span><span class="small muted">' + (b.on ? 'On today' : 'Off today') + '</span></button>';
+        }).join('') + '</div></div></div>';
+    }
+    var me = barber(UI.barberId);
+    if (UI.pin.length < 4) {
+      var keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
+      return '<div class="stage dark"><div class="col" style="gap:22px;text-align:center">' +
+        '<div><div class="small muted" style="font-weight:600">Hi ' + me.name + '</div><div class="h1">Enter your PIN</div><div class="small muted" style="margin-top:4px">Demo: any 4 digits work</div></div>' +
+        '<div class="pins" aria-hidden="true">' + [0, 1, 2, 3].map(function (i) { return '<span class="' + (i < UI.pin.length ? 'on' : '') + '"></span>'; }).join('') + '</div>' +
+        '<div class="keypad">' + keys.map(function (k) {
+          return k === '' ? '<span></span>' : '<button class="key" data-action="b-key" data-k="' + k + '"' + (k === '⌫' ? ' aria-label="Delete"' : '') + '>' + k + '</button>';
+        }).join('') + '</div>' +
+        '<button class="btn ghost" data-action="b-logout">Not ' + me.name + '?</button></div></div>';
+    }
+    if (UI.settingsOpen) return viewSettings(me);
+
+    var now_ = serving(me.id), q = queue(me.id), up = q[0];
+    var head = '<div class="row between"><div class="row" style="gap:10px"><div class="avatar">' + me.name[0] + '</div>' +
+      '<div><div class="small muted" style="font-weight:600">' + SHOP.name + ' · Staff</div><div class="h2">' + me.name + '</div></div></div>' +
+      '<div class="row" style="gap:6px"><button class="btn ghost sm" data-action="b-settings" aria-label="Shop settings">Settings</button><button class="btn ghost sm" data-action="b-logout">Log out</button></div></div>';
+    var cur = now_ ? '<div class="card row between"><div><div class="small muted" style="font-weight:600">Now serving</div><div style="font-size:20px;font-weight:800">#' + now_.num + ' · ' + svcNames(now_.services) + '</div>' +
+      '<div class="small muted">Started ' + Math.max(0, Math.round((now() - now_.started) / MIN)) + ' min ago</div></div><button class="btn ghost sm" data-action="b-done" data-id="' + now_.id + '">Done</button></div>'
+      : '<div class="card"><div class="small muted" style="font-weight:600">Now serving</div><div style="font-size:18px;font-weight:800">Nobody. You’re free.</div></div>';
+    var nextCard = '';
+    if (up) {
+      var p = presenceLabel(up.presence);
+      var hereLater = q.slice(1).find(function (x) { return x.presence === 'here'; });
+      nextCard = '<div class="next-card"><div class="row between" style="align-items:flex-start"><div><div class="label" style="color:var(--soft-ink)">Up next</div>' +
+        '<div style="font-size:44px;font-weight:800;line-height:1;color:#fff">#' + up.num + '</div><div class="small" style="color:#E6D3A8">' + svcNames(up.services) + ' · ' + up.mins + ' min</div></div>' +
+        '<div class="pill" style="background:var(--surface);color:' + p.c + '">' + p.t + '</div></div>' +
+        '<button class="btn" data-action="b-start" data-id="' + up.id + '">Start #' + up.num + '</button>' +
+        '<div class="grid2"><a class="btn ghost amber sm" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="sms:' + esc(up.phone) + '?&body=' + encodeURIComponent('Hi, it’s ' + me.name + ' at ' + SHOP.name + '. You’re up (#' + up.num + '). Please be here in ' + S.settings.grace + ' minutes or you’ll lose your spot.') + '">Text customer</a>' +
+        '<button class="btn ghost amber sm" data-action="b-noshow" data-id="' + up.id + '">No-show</button></div>' +
+        (up.presence !== 'here' && hereLater ? '<div class="small" style="color:#E6D3A8">#' + hereLater.num + ' is already in the shop. You can take them first.</div>' : '') +
+        '</div>';
+    }
+    var rows = q.slice(up ? 1 : 0).map(function (t) {
+      var p = presenceLabel(t.presence);
+      return '<div class="item"><div style="font-size:17px;font-weight:800;width:48px">#' + t.num + '</div>' +
+        '<div style="flex:1"><div style="font-size:14px;font-weight:700">' + svcNames(t.services) + '</div><div class="small muted">Joined ' + new Date(t.joined).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' }) + '</div></div>' +
+        '<div class="status" style="color:' + p.c + '">' + p.t + '</div>' +
+        '<button class="btn ghost sm" data-action="b-start" data-id="' + t.id + '" aria-label="Start number ' + t.num + '">Start</button></div>';
+    }).join('');
+    var others = onToday().filter(function (b) { return b.id !== me.id; }).map(function (b) {
+      return '<div class="card row between" style="padding:10px 12px"><span style="font-weight:700">' + b.name + '</span><span class="small muted">' + fmtWait(barberWait(b.id)) + '</span></div>';
+    }).join('');
+    return '<div class="stage dark"><div class="col">' + head + cur + nextCard +
+      '<div class="row between"><div class="h2" style="font-size:16px">Your queue</div><div class="small muted">' + q.length + ' waiting · ~' + barberWait(me.id) + ' min</div></div>' +
+      (rows ? '<div class="card list" style="padding:0 14px">' + rows + '</div>' : (up ? '' : '<div class="card small muted">Nobody waiting for you.</div>')) +
+      '<div class="h2" style="font-size:16px">Rest of the shop</div><div class="grid2">' + others + '</div></div></div>';
+  }
+
+  function viewSettings(me) {
+    var st = S.settings;
+    function stepper(key, val, unit) {
+      return '<div class="stepper"><button data-action="s-dec" data-k="' + key + '" aria-label="Less">−</button><b style="min-width:64px;text-align:center">' + val + ' ' + unit + '</b><button data-action="s-inc" data-k="' + key + '" aria-label="More">+</button></div>';
+    }
+    return '<div class="stage dark"><div class="col">' +
+      '<div class="row between"><div class="h1">Shop settings</div><button class="btn ghost sm" data-action="b-settings">Close</button></div>' +
+      '<div class="card"><div class="setting"><div><div style="font-weight:700">Grace period</div><div class="small muted">Time to reach the chair once called</div></div>' + stepper('grace', st.grace, 'min') + '</div>' +
+      '<div class="setting"><div><div style="font-weight:700">Ask to confirm at</div><div class="small muted">People ahead when “nearly up” shows</div></div>' + stepper('confirmAhead', st.confirmAhead, 'ahead') + '</div>' +
+      '<div class="setting"><div><div style="font-weight:700">Drop back first</div><div class="small muted">First miss moves back 2 spots, second removes</div></div>' +
+      '<button class="switch' + (st.dropBack ? ' on' : '') + '" role="switch" aria-checked="' + st.dropBack + '" aria-label="Drop back first" data-action="s-toggle"></button></div></div>' +
+      '<div class="h2" style="font-size:16px">Working today</div><div class="card">' + S.barbers.map(function (b) {
+        return '<div class="setting"><div style="font-weight:700">' + b.name + '</div><button class="switch' + (b.on ? ' on' : '') + '" role="switch" aria-checked="' + b.on + '" aria-label="' + b.name + ' working today" data-action="s-barber" data-id="' + b.id + '"></button></div>';
+      }).join('') + '</div></div></div>';
+  }
+
+  // ---------- actions ----------
+  function startTicket(id) {
+    var t = ticket(id); if (!t) return;
+    var cur = serving(t.barberId);
+    if (cur) cur.status = 'done';
+    t.status = 'serving'; t.started = now(); t.presence = 'here';
+    toast('Started #' + t.num);
+  }
+
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-action]'); if (!el || el.disabled) return;
+    var a = el.getAttribute('data-action'), id = el.getAttribute('data-id'), k = UI.kiosk;
+    switch (a) {
+      case 'view': UI.view = el.getAttribute('data-v'); render(); window.scrollTo(0, 0); break;
+      case 'skip': S.offset = (S.offset || 0) + 10 * MIN; S.tickets.forEach(function (t) { if (t.status === 'serving' && now() - t.started > t.mins * MIN) t.status = 'done'; }); save(); toast('Clock moved forward 10 minutes'); break;
+      case 'reset': S = seed(); UI.myTicket = null; UI.kiosk = { step: 0, barberId: null, services: [], phone: '', agreed: false, ticketId: null }; save(); toast('Demo reset'); break;
+      case 'k-start': k.step = 1; render(); break;
+      case 'k-barber': k.barberId = id; render(); break;
+      case 'k-svc': var i = k.services.indexOf(id); if (i >= 0) k.services.splice(i, 1); else k.services.push(id); render(); break;
+      case 'k-next': k.step++; render(); break;
+      case 'k-back': k.step--; render(); break;
+      case 'k-cancel': UI.kiosk = { step: 0, barberId: null, services: [], phone: '', agreed: false, ticketId: null }; render(); break;
+      case 'k-confirm':
+        var bid = k.barberId === 'any' ? quickest().b.id : k.barberId;
+        var t = { id: 't' + S.next + '-' + Date.now().toString(36), num: S.next, barberId: bid, services: k.services.slice(), mins: minsFor(k.services),
+          phone: k.phone.replace(/\s/g, ''), joined: now(), order: S.next, status: 'waiting', presence: 'away', started: null, misses: 0 };
+        S.next++; S.tickets.push(t); k.ticketId = t.id; k.step = 4; UI.myTicket = t.id; save(); break;
+      case 'k-open-ticket': UI.myTicket = k.ticketId; UI.view = 'ticket'; render(); window.scrollTo(0, 0); break;
+      case 't-onway': ticket(UI.myTicket).presence = 'onway'; save(); break;
+      case 't-here': ticket(UI.myTicket).presence = 'here'; save(); toast('Checked in'); break;
+      case 't-leave': ticket(UI.myTicket).status = 'removed'; save(); toast('You’ve left the queue'); break;
+      case 't-forget': UI.myTicket = null; render(); break;
+      case 'b-pick': UI.barberId = id; UI.pin = ''; render(); break;
+      case 'b-key':
+        var key = el.getAttribute('data-k');
+        UI.pin = key === '⌫' ? UI.pin.slice(0, -1) : (UI.pin + key).slice(0, 4); render(); break;
+      case 'b-logout': UI.barberId = null; UI.pin = ''; UI.settingsOpen = false; render(); break;
+      case 'b-settings': UI.settingsOpen = !UI.settingsOpen; render(); break;
+      case 'b-start': startTicket(id); save(); break;
+      case 'b-done': ticket(id).status = 'done'; save(); toast('Nice one'); break;
+      case 'b-noshow':
+        var ns = ticket(id);
+        if (S.settings.dropBack && ns.misses === 0) {
+          var q = queue(ns.barberId), after = q[Math.min(2, q.length - 1)];
+          ns.misses = 1; ns.presence = 'away';
+          if (after && after.id !== ns.id) ns.order = after.order + 0.5;
+          toast('#' + ns.num + ' moved back two spots');
+        } else { ns.status = 'removed'; toast('#' + ns.num + ' released'); }
+        save(); break;
+      case 's-inc': case 's-dec':
+        var sk = el.getAttribute('data-k'), d = a === 's-inc' ? 1 : -1;
+        S.settings[sk] = Math.max(sk === 'grace' ? 1 : 0, Math.min(sk === 'grace' ? 30 : 5, S.settings[sk] + d)); save(); break;
+      case 's-toggle': S.settings.dropBack = !S.settings.dropBack; save(); break;
+      case 's-barber': var bb = barber(id); bb.on = !bb.on; save(); break;
+    }
+  });
+
+  document.addEventListener('input', function (e) {
+    var f = e.target.getAttribute('data-input'); if (!f) return;
+    if (f === 'phone') {
+      UI.kiosk.phone = e.target.value;
+      var btn = document.getElementById('k-confirm');
+      if (btn) btn.disabled = !(/^04\d{8}$/.test(UI.kiosk.phone.replace(/\s/g, '')) && UI.kiosk.agreed);
+    }
+  });
+  document.addEventListener('change', function (e) {
+    var f = e.target.getAttribute('data-input'); if (!f) return;
+    if (f === 'agree') { UI.kiosk.agreed = e.target.checked; var btn = document.getElementById('k-confirm'); if (btn) btn.disabled = !(/^04\d{8}$/.test(UI.kiosk.phone.replace(/\s/g, '')) && UI.kiosk.agreed); }
+    if (f === 'pick' && e.target.value) { UI.myTicket = e.target.value; render(); }
+  });
+
+  // open a ticket straight from a scanned QR link (same device in the demo)
+  var m = location.hash.match(/ticket=([^&]+)/);
+  if (m && ticket(decodeURIComponent(m[1]))) { UI.myTicket = decodeURIComponent(m[1]); UI.view = 'ticket'; }
+
+  render();
+  setInterval(function () {
+    if (UI.view === 'kiosk' && UI.kiosk.step === 3) return; // don't wipe the phone field while typing
+    render();
+  }, 15000);
+})();
+</script>
+</body>
+</html>
